@@ -4,6 +4,18 @@
 
 setwd("C:\\R\\Coursera\\CapstoneProject\\Dataset\\final\\en_US")
 
+blogs <- readLines("en_US.blogs.txt")
+length(blogs)
+[1] 899288
+
+news <- readLines("en_US.news.txt")
+length(news)
+[1] 77259
+
+twitter <- readLines("en_US.twitter.txt")
+length(twitter)
+[1] 2360148
+
 #Libraries for text mining
 library(e1071)
 library(textir)
@@ -32,6 +44,9 @@ set.seed(124)
 sam_news <- news[rbinom(length(news)*0.1, length(news),0.5)]
 length(sam_news)
 [1] 7725
+
+rm(blogs, news, twitter)
+
 
 #Writing the sample in CSV files in sample directory
 write.csv(sam_twitter, file="twitter.csv", row.names=F)
@@ -163,47 +178,16 @@ lines <- 0
  close(con)
  lines
 
-For quiz1:
-blogs <- readLines("en_US.blogs.txt")
-length(blogs)
-[1] 899288
 
-news <- readLines("en_US.news.txt")
-length(news)
-[1] 77259
-
-twitter <- readLines("en_US.twitter.txt")
-length(twitter)
-[1] 2360148
-
-#Lines with longest character
-max(nchar(blogs))
-[1] 40835
-
-max(nchar(news))
-[1] 5760
-
-max(nchar(twitter))
-[1] 213
-
-#love / hate (all lowerscase) in twitter
-love_count <- sum(grepl("love", twitter))
-hate_count <- sum(grepl("hate", twitter))
-love_count / hate_count
-[1] 4.108592
-
-#word "biostats" matching in twitter
-biostats <- grep("biostats", twitter)
-twitter[biostats]
-[1] "i know how you feel.. i have biostats on tuesday and i have yet to study =/"
-
-#No. of tweets in "A computer once beat me at chess, but it was no match for me at kickboxing"
-sum(grepl("A computer once beat me at chess, but it was no match for me at kickboxing",twitter) 
-
- 
+##############ggplot###############
 
 
+big3st10 <- head(ng3stfreq,10)
+barplot(big3st10$freq, names.arg=big3st10$ngrams, las=2, main = "Top 10 trigrams without sans words")
 
+g <- ggplot(big3st10, aes(x=ngrams, y=freq))+
+geom_bar(stat="identity")+ coord_flip() + xlab("Trigram")+ylab("Frequency")
++ labs(title="Top 10 trigrams sans stop words") + theme(legend.title=elements_blank())
 
-
+print(g)
 
