@@ -1,0 +1,150 @@
+---
+title: "Milestone Report"
+author: "Asmi Ariv"
+date: "Aug 22, 2016"
+output: html_document
+---
+
+## Executive Summary  
+
+This is an exploratory data analysis report of a project being developed. The main objective of the project is to develop a shiny web application that will predict the suggested words based on certain words supplied by the users.This document explains the certain aspects of the data available.  
+
+## Loading the data  
+```{r cache=TRUE, warning=FALSE,message=FALSE}
+con1 <- file("en_US.blogs.txt","rb")
+blogs <- readLines(con1)
+close(con1)
+
+con2 <- file("en_US.news.txt","rb")
+news <- readLines(con2)
+close(con2)
+
+con3 <- file("en_US.twitter.txt","rb")
+twitter <- readLines(con3)
+close(con3)
+
+print(paste("lines in blogs =",length(blogs),";","lines in news =",length(news), ";", "lines in twitter =",length(twitter)))
+```
+
+As we can see that each file is very large and using them can be computationally very expensive. Hence, we need to take the subsets of these files for our analysis, which will make it easy for us to deal with the data (i.e. economically viable in terms of time and memory used for all computions).   
+
+
+## Subsetting data  
+```{r}
+set.seed(124)
+sam_twitter <- twitter[rbinom(length(twitter)*0.005, length(twitter),0.5)]
+
+length(sam_twitter)
+
+set.seed(124)
+sam_blogs <- blogs[rbinom(length(blogs)*0.01, length(blogs),0.5)]
+length(sam_blogs)
+
+set.seed(124)
+sam_news <- news[rbinom(length(news)*0.01, length(news),0.5)]
+length(sam_news)
+
+rm(blogs, news, twitter)
+```
+Now, we have much smaller size in order to perform our analysis easily.  
+
+## Loading libraries  
+```{r warning=FALSE,message=FALSE}
+library(tm)
+library(ngram)
+library(ggplot2)
+```
+
+
+## Preprocessing the text to remove unnecessary terms
+```{r cache=TRUE}
+data <- c(sam_twitter,sam_news,sam_blogs)
+dataCh <- as.character(data.frame(data,stringsAsFactors=FALSE))
+proData <- preprocess(dataCh, case="lower", remove.punct=TRUE, 
+				remove.numbers =TRUE, fix.spacing=TRUE)
+```
+We have removed some of the unwanted terms that are not required for the analysis. Since, it is just the preliminary round of analysis, we will further consider removing more terms in order to make it computationally easy for the system to run the application smoothly. We will do this at the time of final development phase of the application. For time being, we have only removed some terms for the exploratory data analysis.   
+
+
+## Bigram Analysis  
+
+```{r cache=TRUE}
+ng2 <- ngram(proData, n=2)
+ng2freq <- get.phrasetable(ng2)
+
+big2_10 <- head(ng2freq,10)
+g <- ggplot(big2_10, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+g <- g	+ geom_bar(stat="identity")+ coord_flip() + xlab("Bigram") 
+g <- g	+ ylab("Frequency")+ labs(title="Top 10 Bigrams")
+print(g)
+```
+
+## Trigram Analysis  
+
+```{r cache=TRUE}
+ng3 <- ngram(proData, n=3)
+ng3freq <- get.phrasetable(ng3)
+
+big3Top <- head(ng3freq,10)
+g <- ggplot(big3Top, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+g <- g + geom_bar(stat="identity")+ coord_flip() + xlab("Trigram") 
+g	<- g + ylab("Frequency")+ labs(title="Top 10 Trigrams")
+print(g)
+
+```
+
+
+## Quadgram analysis  
+
+```{r cache=TRUE}
+ng4 <- ngram(proData, n=4)
+ng4freq <- get.phrasetable(ng4)
+
+big4_10 <- head(ng4freq,10)
+g <- ggplot(big4_10, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+g <- g	+ geom_bar(stat="identity")+ coord_flip() + xlab("Quadgram") 
+g <- g	+ ylab("Frequency")+ labs(title="Top 10 quadgrams")
+print(g)
+
+```
+
+
+# Strategy and Plan for the prediction model
+This is just an exploratory data analysis in order to understand data: 
+
+* Different set of words   
+
+* The association between words  
+
+    + Bigram  
+    
+    + Trigram  
+    
+    + Quadgram  
+    
+* Frequencies of the word(s)   
+
+While the development is still in process, the following will be considered:  
+
+* May exclude stop words to reduce the memory usage and run time  
+
+* May also stem the words to further reduce memory usage and run time  
+
+* Will use the profanity terms available online to remove them  
+
+* Will train the model to predict the suggested words:  
+
+    + Create an algorithm that uses the given word(s)  
+    
+    + Uses quadgram, trigram or bigram in the same order  
+    
+    + Displays the next word to be selected  
+    
+
+* Minimize the memory usage and run time    
+
+* Develop a Shiny application to upload it on the Shiny website  
+
+
+
+

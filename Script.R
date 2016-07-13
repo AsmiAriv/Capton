@@ -3,26 +3,28 @@
 #Working directory:
 
 setwd("C:\\R\\Coursera\\CapstoneProject\\Dataset\\final\\en_US")
-
-blogs <- readLines("en_US.blogs.txt")
+con1 <- file("en_US.blogs.txt")
+blogs <- readLines(con1, encoding="UTF-8")
+close(con1)
 length(blogs)
 [1] 899288
 
-news <- readLines("en_US.news.txt")
+con2 <- file("en_US.news.txt", "rb")
+news <- readLines(con2,encoding="UTF-8")
+close(con2)
 length(news)
-[1] 77259
+[1] 1010242
 
-twitter <- readLines("en_US.twitter.txt")
+con3 <- file("en_US.twitter.txt", "rb")
+twitter <- readLines(con3,encoding="UTF-8")
+close(con3)
 length(twitter)
 [1] 2360148
 
 #Libraries for text mining
-library(e1071)
-library(textir)
 library(tm)
-library(VGAM)
 library(ngram)
-
+library(ggplot2)
 
 #Creating a subdirectory and loading the subset of the data
 dir.create("sample") 
@@ -92,19 +94,33 @@ data <- rbind(twt,nws,blg)
 [1] "data.frame"
 
 dataCh <- as.character(data)
-proData <- preprocess(dataCh, case="lower", remove.punct=TRUE, 
+proData <- preprocess(data, case="lower", remove.punct=TRUE, 
 				remove.numbers =TRUE, fix.spacing=TRUE)
 #Without stop words
 corpdata <- Corpus(VectorSource(proData))
 dataStop <- tm_map(corpdata, removeWords, stopwords("english"))
 text <- sapply(dataStop, as.character)
 
+
+#Unigram Analysis
+ng <- ngram(proData, n=1)
+ngfreq <- get.phrasetable(ng)
+
+big10 <- head(ngfreq,10)
+g <- ggplot(big10, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+	+ geom_bar(stat="identity")+ coord_flip() + xlab("Unigram") 
+	+ ylab("Frequency")+ labs(title="Top 10 Unigrams")
+
+
 #Bigram Analysis
 ng2 <- ngram(proData, n=2)
 ng2freq <- get.phrasetable(ng2)
 
-big10 <- head(ng2freq,10)
-barplot(big10$freq, names.arg=big10$ngrams, las=2, main = "Top 10 bigrams")
+big2_10 <- head(ng2freq,10)
+g <- ggplot(big2_10, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+	+ geom_bar(stat="identity")+ coord_flip() + xlab("Bigram") 
+	+ ylab("Frequency")+ labs(title="Top 10 Bigrams")
+
 
 #Investigating without stop words
 ng2Stop <- ngram(text, n=2)
@@ -118,7 +134,10 @@ ng3 <- ngram(proData, n=3)
 ng3freq <- get.phrasetable(ng3)
 
 big3Top <- head(ng3freq,10)
-barplot(big3Top$freq, names.arg=big3Top$ngrams, las=2, main = "Top 10 trigrams")
+g <- ggplot(big3Top, aes(x=reorder(ngrams,freq), y=freq, fill=ngrams)) 
+	+ geom_bar(stat="identity")+ coord_flip() + xlab("Bigram") 
+	+ ylab("Frequency")+ labs(title="Top 10 Trigrams")
+
 
 #Investigating without stop words
 ng3Stop <- ngram(text, n=3)
@@ -190,4 +209,8 @@ geom_bar(stat="identity")+ coord_flip() + xlab("Trigram")+ylab("Frequency")
 + labs(title="Top 10 trigrams sans stop words") + theme(legend.title=elements_blank())
 
 print(g)
+
+
+
+http://rpubs.com/AsmiAriv/195569
 
