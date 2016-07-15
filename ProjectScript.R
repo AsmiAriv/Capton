@@ -19,29 +19,33 @@ twitter <- readLines(con3)
 close(con3)
 length(twitter)
 
+profane <- file("profanity.txt", "r")
+profWord <- readLines(profane)
+close(profane)
+
 #Libraries for text mining
 library(tm)
 library(ggplot2)
 library(RWeka)
 library(SnowballC)
 library(NLP)
-library("flexclust")
+library(e1071)
 
 
 #Subsetting the data for a sample creation
 set.seed(124)
-sam_twitter <- twitter[rbinom(length(twitter)*0.005, length(twitter),0.5)]
+sam_twitter <- twitter[rbinom(length(twitter)*0.0005, length(twitter),0.5)]
 
 length(sam_twitter)
 
 
 set.seed(124)
-sam_blogs <- blogs[rbinom(length(blogs)*0.01, length(blogs),0.5)]
+sam_blogs <- blogs[rbinom(length(blogs)*0.001, length(blogs),0.5)]
 length(sam_blogs)
 
 
 set.seed(124)
-sam_news <- news[rbinom(length(news)*0.01, length(news),0.5)]
+sam_news <- news[rbinom(length(news)*0.001, length(news),0.5)]
 length(sam_news)
 
 rm(blogs, news, twitter)
@@ -67,17 +71,22 @@ corpdata <- tm_map(corpdata, removeNumbers)
 # remove extra whitespace
 corpdata <- tm_map(corpdata, stripWhitespace)
 # remove profanity
-#corpdata <- tm_map(corpdata, removeWords, profanity)
+corpdata <- tm_map(corpdata, removeWords, profWord)
 # remove stopwords
-#corpdata <- tm_map(corpdata, removeWords, stopwords("english"))
+corpdata <- tm_map(corpdata, removeWords, stopwords("english"))
 # stem the data
-#corpdata <- tm_map(corpdata, stemDocument)
-#Removing other characters
-#tm_map (corpdata, toSpace "\"|/|@|\\|" ) 
+corpdata <- tm_map(corpdata, stemDocument)
 #Converting to PlainTextDocument
+corpdata <- tm_map(corpdata, PlainTextDocument)
+# remove non-english characters/words
+corpdata <- sapply(corpdata, function(row) iconv(row, "latin1", "ASCII", sub=""))
+corpdata <- Corpus(VectorSource(corpdata))
+#Converting to PlainTextDocument 
 corpdata <- tm_map(corpdata, PlainTextDocument)
 corpdata
 }
+
+
 
 #Function to build tdms
 tdm <- function(data, n){
@@ -85,7 +94,7 @@ ngramTokenizer <-
   function(x)
     unlist(lapply(ngrams(words(x), n), paste, collapse = " "), use.names = FALSE)
 
-  tdm <- TermDocumentMatrix(data, control = list(tokenize = ngramTokenizer))
+  tdm <- TermDocumentMatrix(data, control = list(tokenize = ngramTokenizer, weighting = weightTfIdf))
 tdm <- removeSparseTerms(tdm,.999)
 tdm
 }
@@ -93,7 +102,7 @@ tdm
 
 #Function for normalizing the column
 
-Norm.row <- function(temp) {
+Norm.col <- function(temp) {
 rowcount= nrow(temp)
 colcount  = ncol(temp)
 
@@ -110,7 +119,7 @@ temp
 
 #Function for normalizing rows
 
-Norm.col <- function(temp) {
+Norm.row <- function(temp) {
 rowcount= nrow(temp)
 colcount  = ncol(temp)
 for(i in 1:rowcount){
@@ -125,30 +134,75 @@ temp
 }
 
 
-###clustering, classifications, prediction
+###############clustering, classifications, prediction################
+#Normalize columnwise
 
 #Clustering and classifications
+
+#K-means and naiveBayes
+clust <- function(mat, n){
+grwords <- kmeans(mat, centers=n, nstart=3)
+mat <- cbind(mat,grwords$cluster)
+mat
+}
 classifier <- function(mat){
-grwords <- kmeans(mat, centers=30, nstart=3) #Need to work on this
-Mat_c <- cbind(mat,grwords$cluster)
-trainset = sample(1:nrow(Mat_c), trunc(0.7*nrow(Mat_c)))
-classifier = naiveBayes(Mat_c[trainset, 1:ncol(Mat_c)], as.factor(Mat_c[trainset, ncol(Mat_c)+1]))
-classifier
-}
-
-#Test prediction
-testPred <- function(){
-testpredicted = predict(classifier,Mat_c[-trainset, ncol(Mat_c)])
-table(testpredicted,Mat4_c[-trainset, 23])
-prop<-prop.table(table(testpredicted,Mat_c[-trainset, ncol(Mat_c)+1]))
-mean(testpredicted==Mat_c[-trainset, ncol(Mat_c)+1]) # Accuracy
-mean
+set.seed(70)
+trainset = sample(1:nrow(mat), trunc(0.7*nrow(mat)))
+classifier = naiveBayes(mat[trainset, 1:(ncol(mat)-1)], as.factor(mat[trainset, ncol(mat)]))
+trainpredicted = predict(classifier,mat[trainset, 1:(ncol(mat)-1)])
+trm <- mean(trainpredicted==mat[trainset, ncol(mat)])
+testpredicted = predict(classifier,mat[-trainset, 1:(ncol(mat)-1)])
+tm <- mean(testpredicted==mat[-trainset, ncol(mat)])
+list(classifier=classifier, trainAccuracy=trm, testAccuracy=tm, mat=mat)
 }
 
 
-#We can also use support vector machine- best for text prediction:
-syntax: classifier <- svm(Class~., data=train, kernel="polynomial", degree = 2, cost=1, scale=F)
+#K-means and Support Vector Machine
+classifier <- function(mat, n){
+grwords <- kmeans(mat, centers=n, nstart=3)
+mat <- cbind(mat,grwords$cluster)
+set.seed(70)
+trainset = sample(1:nrow(mat), trunc(0.7*nrow(mat)))
+classifier <- svm(as.factor(mat[trainset, ncol(mat)])~mat[trainset, 1:(ncol(mat)-1)], kernel="linear",cost=0.1, scale=F)
+trainpredicted = predict(classifier,mat[trainset, 1:(ncol(mat)-1)])
+trm <- mean(trainpredicted==mat[trainset, ncol(mat)])
+testpredicted = predict(classifier,mat[-trainset, 1:(ncol(mat)-1)])
+tm <- mean(testpredicted==mat[-trainset, ncol(mat)])
+list(classifier=classifier, trainAccuracy=trm, testAccuracy=tm, mat=mat)
+}
 
+
+
+################Function for dotproduct
+dotproduct <- function(temp, str) {
+rowcount= nrow(temp)
+colcount  = ncol(temp)
+dotproducts = numeric(rowcount)
+
+for( i in 1:rowcount){
+dotproducts[i] =  sum(temp[grep(str,rownames(temp)),]*temp[i,])
+}
+
+ordering = order(dotproducts)
+ordering
+}
+
+#Alternatively, try doc.scores <- t(word.vector) %*% mat
+
+
+##########Test prediction
+testPred <- function(x,...){
+trainset <- x$trainset
+mat <- x$mat
+classifier <- x$classifier
+testpredicted = predict(classifier,mat[-trainset, 1:(ncol(mat)-1)])
+table(testpredicted,mat[-trainset, ncol(mat)])
+m <- mean(testpredicted==mat[-trainset, ncol(mat)]) # Accuracy
+m
+}
+
+
+############################input/predict functions########################
 #So, we can write a function for combination of words
 
 predict <- function(x){
@@ -204,32 +258,34 @@ words <- setdiff(words,str)
 unique(words)
 }
 
+input <- function(x,...){
+classifier <- classifier4$classifier
+mt <<- classifier4$mat
+tdata <- x
+corpdata <- Tokenizedata(tdata)
+tdm4_t <- tdm(corpdata,4)
+Mat4_t <- as.matrix(tdm4_t)
+#Mat_t_n <- Norm.col(Mat4_t)
 
+pred <- predict(classifier, Mat4_t)
+pred <- as.matrix(pred)
+m <- cbind(Mat4_t, pred)
+mtes <- as.matrix(head(mt[(mt[,ncol(mt)]==pred[,1]),ncol(mt)],nrow(pred)))
+mytest <- cbind(m,rownames(mtes))
+mytest[,(ncol(mytest)-1):ncol(mytest)]
+}                                            
+am sorry for the    "4" "at the top of"     
+i am sorry for      "4" "for the first time"
+sorry for the error "4" "i would love to"
 
-#Function for dotproduct
-dotproduct <- function(temp, str) {
-rowcount= nrow(temp)
-colcount  = ncol(temp)
-dotproducts = numeric(rowcount)
-
-for( i in 1:rowcount){
-dotproducts[i] =  sum(temp[grep(str,rownames(temp)),]*temp[i,])
-}
-
-ordering = order(dotproducts)
-ordering
-}
-
-#Alternatively, try doc.scores <- t(word.vector) %*% mat
-
-
+#######################Tokenizing and creating tdms######################
 #Tokenizing the data
 corpdata <- Tokenizedata(data)
 rm(data)
 
 #Tdm for unigram
-tdm1 <- TermDocumentMatrix(corpdata)
-Mat1 <- as.matrix(removeSparseTerms(tdm1,.999))
+tdm1 <- TermDocumentMatrix(corpdata, control = list(weighting = weightTfIdf))
+Mat1 <- as.matrix(removeSparseTerms(tdm1,.99))
 
 # Tdm for bigram
 tdm2 <- tdm(corpdata, 2)
@@ -244,14 +300,11 @@ Mat3 <- as.matrix(tdm3)
 tdm4 <- tdm(corpdata,4)
 Mat4 <- as.matrix(tdm4)
 
+#######################################################################
 
 
 
-
-
-
-
-
+  
 
 
 
