@@ -81,6 +81,7 @@ corpdata <- tm_map(corpdata, stemDocument)
 #Converting to PlainTextDocument
 corpdata <- tm_map(corpdata, PlainTextDocument)
 # remove non-english characters/words
+corpdata <- tm_map(corpdata, removeWords, c("NA","NA.1","NA.2","NA.3","NA.4"))
 corpdata <- sapply(corpdata, function(row) iconv(row, "latin1", "ASCII", sub=""))
 corpdata <- Corpus(VectorSource(corpdata))
 #Converting to PlainTextDocument 
@@ -97,10 +98,20 @@ ngramTokenizer <-
   function(x)
     unlist(lapply(ngrams(words(x), n), paste, collapse = " "), use.names = FALSE)
 
-  tdm <- TermDocumentMatrix(data, control = list(tokenize = ngramTokenizer, weighting = weightTfIdf))
+  tdm <- TermDocumentMatrix(corpdata, control = list(tokenize = ngramTokenizer, weighting = function(x) weightSMART(x, spec = "apc")))
 tdm <- removeSparseTerms(tdm,.999)
 tdm
 }
+
+
+a <- a + (1-a)*(tf)/max(tf) - this is called maximum tf normalization in order to  mitigate the anomaly of higher frequency of terms in 
+a large document merely due to the repeatition over and over again. Here a is a smoothing term (ranges from 0 to 1), we choose 0.5.
+
+p <- max{0, log((N-df)/df)}, we can also use t <- log(N/df), here p is probability term for idf (inverse document frequency)
+
+c <- cosine normalization, we can use n for none, u for pivoted unique, or b for byte size 
+
+
 
 
 ##############Function for normalizing the column
@@ -125,40 +136,42 @@ temp[,i] = (temp[,i]-colmean)/colsd
 
 dotproduct <- function(temp, str) {
 dp<- (temp[grep(str,rownames(temp)),]) %*% t(temp)
-ordering <- order(dp)
-dp <- dp[ordering]
-list(dp=dp,order=ordering)
+dp <- apply(dp,2,sum)
+dp <- dp[order(dp, decreasing=T)]
+res <- head(dp)
+if(sum(res)==0){return("No match found! sorry, try some other word")}
+
+res <- res[2:5]
+return(res)
 }
 
-words <- function(df=df,dp) {
 
-words <- rownames(df[tail(dp$order,5),])
-words <- words[1:4]
-score <- tail(dp$dp,5)
-score <- score[1:4]
+###Another option
 
-res <- rbind(words,score)
-res
+output <- function(tdm, str){
+ op <- head(findAssocs(x=tdm,term=str,corlimit=0.1)[[1]],4)
+if(length(op)==0){return("No match found! sorry, try some other word")}
+
+return(op)
 }
 
 ##################################################Algorithm/steps#################################
 
-1. Load all libraries
+1. Load all libraries(just one, "tm")
 2. Load the data
 3. Tokenize and cleane the data
 4. Create TDM with ngrams
-5. Create matrices for each ngrams
+5. Create matrices for each ngram
 6. Normalize each matrix columnwise
-7. Create a data frame for each matrix
+7. Check if the input is a single/multiple word
 8. Supply the matrix and the word to dotproduct function
-9. Supply data frame and output of dotproduct to words function
 10. AND print the results
 
 
 Example of unigram:
 Dataset has already been created "corpdata"
 
-tdm <- TermDocumentMatrix(corpdata,control = list(weighting = weightTfIdf))
+tdm <- TermDocumentMatrix(corpdata,control = list(weighting = function(x) weightSMART(x, spec = "apc")))
 tdm1 <- removeSparseTerms(tdm, 0.999)
 mt <- as.matrix(tdm1)
 mt_n <- Norm.col(mt)
@@ -169,9 +182,9 @@ df <- data.frame(mt_n)
 ###
 
 dp <- dotproduct(mt_n, "aaa")
-res <- words(df,dp)
 
-Need to remove words like "NA, NA.1, NA.2"
+
+
 
 
 ##############################################################NEED TO WORK ON HOW TO USE NGRAM OF HIGHER DEGREE##################################################
@@ -255,6 +268,56 @@ tdm4 <- tdm(corpdata,4)
 Mat4 <- as.matrix(tdm4)
 
 #######################################################################
+Redundant functions:
+
+words <- function(df=df,dp) {
+
+words <- rownames(df[tail(dp$order,5),])
+words <- words[1:4]
+score <- tail(dp$dp,5)
+score <- score[1:4]
+
+res <- rbind(words,score)
+res
+}
+
+###Alternatively
+
+dotproduct <- function(temp, str) {
+rowcount= nrow(temp)
+colcount  = ncol(temp)
+dotproducts = numeric(rowcount)
+
+for( i in 1:rowcount){
+dotproducts[i] =  sum(temp[grep(str,rownames(temp)),]*temp[i,])
+}
+ordering = order(dotproducts)
+#dp <- sort(dotproducts, decreasing=T)
+list(order=ordering, dp=dotproducts)
+}
+
+
+words <- function(df=df,dp) {
+
+words <- rownames(df[tail(dp$order,5),])
+words <- words[1:4]
+score <- tail(dp$dp,5)
+score <- score[1:4]
+
+res <- rbind(words,score)
+res
+}
+
+
+
+
+
+
+Need to look at these:
+
+Ufreq[which(Ufreq$grams=="happiest"),] 
+
+
 
 
 
