@@ -412,7 +412,7 @@ w1 > col1 yes, subset rows, >> w2 > col2 yes, subset rows, >> w3>col3 yes, subse
 w1 > col1 no >> w2 > col1 yes, subset rows, >> w3>col2 yes, subset rows, >> predict w4 > col3
 w2 > col1 no, >> w2>col2 yes, subset rows, >> w3>col3 yes, subset rows, >> predict w4 > col4
 
-search <- function(words){
+#############################################(l>=0)########search <- function(words){
 
 l <- length(words)
 
@@ -440,9 +440,9 @@ for(i in 1:(length(words)-1)){
   }
 words <- words[2:3]
 l <- length(words)
-return(l)
- }
 
+ }
+}##########################################(l=2)########################search <- function(words){
 if (l==2){
 sub_set <- gram3    
 if(words[1] %in% sub_set[,1]){
@@ -459,23 +459,24 @@ if(words[1] %in% sub_set[,1]){
       }
 words <- words[3]
 l <- 1
-return(l)
+
 }
+
+}##########################################(l=1)########################search <- function(words){  ###########Works fine-tested########
 
 if (l==1){
    sub_set1 <- gram2
    sub_set <- gram1
   
-   if(words[1] %in% sub_set1[,1]){      
-   mch <- match(sub_set1[,1], words[1])
-   rn <- row.names((sub_set1[!is.na(mch),]))
+   if(!is.na(words, sub_set1[,1])){      
+   rn <- as.numeric(row.names((sub_set1[sub_set1$word1==words,])))
    sub_set1 <- sub_set1[rn,]
    return(sub_set1$word2[1])
 	}
-   if(words[1] %in% sub_set2[,1]){      
-   mch <- match(sub_set1[,1], words[1])
-   rn <- row.names((sub_set1[!is.na(mch),]))
-   return(sub_set1$word2[1+rn[1]])
+   if(!is.na(words, sub_set[,1])){      
+   rn <- as.numeric(row.names((sub_set[sub_set$word==words,])))
+   if(!is.na(sub_set$word[(rn[1]+1)]))return(sub_set$word[(rn[1]+1)])
+   return(sub_set$word[(rn[1]-1)])
 	}
 
 
