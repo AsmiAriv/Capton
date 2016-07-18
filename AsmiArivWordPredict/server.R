@@ -11,8 +11,8 @@ source("WordPredict.R", local=TRUE)
 
 shinyServer(
   function(input, output) {
-      output$predict <- renderText({paste("Predicted Newxt Word:",predict(input(input$wordPhrase)))})
-      output$wordcloud <- renderPlot({wordcloudPlot(output$predict)})
+      output$predict <- renderText({paste("Predicted Next Word:",predict(input(input$wordPhrase)))})
+      output$wordcloud <- renderPlot({wordcloudPlot(predict(input(input$wordPhrase)))})
       
   }
 )

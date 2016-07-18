@@ -1,11 +1,12 @@
 library(tm)
 library(data.table)
+library(wordcloud)
 
-wordlist <- readRDS("wordlist.rds")
-gram1 <- readRDS("gram1.rds")
-gram2 <- readRDS("gram2.rds")
-gram3 <- readRDS("gram3.rds")
-gram4 <- readRDS("gram4.rds")
+wordlist <- readRDS("data/wordlist.rds")
+gram1 <- readRDS("data/gram1.rds")
+gram2 <- readRDS("data/gram2.rds")
+gram3 <- readRDS("data/gram3.rds")
+gram4 <- readRDS("data/gram4.rds")
 
 #Function for returning the cleaned words for word match
 input <- function(str){
@@ -28,9 +29,6 @@ index <- vector(mode="list")
     
 
 }
-
-if(is.na(match(words, wordlist))) { words <- wordlist[floor(runif(1,5,2200))]
-return(words)}   
 
 return(words) 
 }
@@ -92,21 +90,31 @@ if (l==1){
    return(sub_set1$word2[1])
 	}
    else if(!is.na(match(words, sub_set[,1]))){      
-   rn <- as.numeric(row.names((sub_set[sub_set$word==words,])))
-   if(!is.na(sub_set$word[(rn[1]+1)]))return(sub_set$word[(rn[1]+1)])
-   return(sub_set$word[(rn[1]-1)])
+   rn <- as.numeric(row.names((sub_set[sub_set$word1==words,])))
+   if(!is.na(sub_set$word1[(rn[1]+1)]))return(sub_set$word1[(rn[1]+1)])
+   return(sub_set$word1[(rn[1]-1)])
 	}
-     
+   else return(words)  
 
   }
 
 }
 
 #######################################################################
-wordcloudPlot <- function(str){ words <- c()
-    rn <- as.numeric(row.names((gram1[gram1$word==str,])))   
-for (i in rn:(rn-10){
-if(!is.na(gram1$word[(rn+1)]))words[i] <- gram1$word[(rn[1]+1)]
-}	
-wordcloud(words)
+wordcloudPlot <- function(str){ 
+	words <- c()
+	n <- 0
+        rn <- as.numeric(row.names((gram1[gram1$word1==str,]))) 
+	if(length(rn)>0) {
+	for (i in rn:(rn-10)){
+	if(i<0) break  
+	if(!is.na(gram1$word1[(i+1)])) words[i] <- gram1$word1[(i+1)]
+	if(is.na(gram1$word1[(i+1)])) next
+	n <- i
+	}
+wordcloud(words[n:(rn)],gram1$scores[n:(rn)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
 }
+if(length(rn)==0) {words <- str
+wordcloud(words,colors=brewer.pal(8, "Dark2"),random.color=TRUE)}
+}
+
