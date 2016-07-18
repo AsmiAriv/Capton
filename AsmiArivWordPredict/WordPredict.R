@@ -102,17 +102,26 @@ if (l==1){
 
 #######################################################################
 wordcloudPlot <- function(str){ 
-	words <- c()
-	n <- 0
-        rn <- as.numeric(row.names((gram1[gram1$word1==str,]))) 
-	if(length(rn)>0) {
-	for (i in rn:(rn-10)){
-	if(i<0) break  
-	if(!is.na(gram1$word1[(i+1)])) words[i] <- gram1$word1[(i+1)]
-	if(is.na(gram1$word1[(i+1)])) next
-	n <- i
-	}
-wordcloud(words[n:(rn)],gram1$scores[n:(rn)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+	rn <- as.numeric(row.names((gram1[gram1$word1==str,]))) 
+if(length(rn)>0) {	
+if(rn>5) {
+	
+wordcloud(gram1$word1[(rn-5):(rn+5)],gram1$scores[(rn-5):(rn+5)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+ }
+
+if(rn<=5) {
+	
+wordcloud(gram1$word1[1:10],gram1$scores[1:10],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+ }
+
+if(rn==length(gram1)) {
+	
+wordcloud(gram1$word1[(rn-10):rn],gram1$scores[(rn-10):rn],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+ 
 }
 }
+}
+
+
+############################
 

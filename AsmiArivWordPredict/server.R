@@ -7,6 +7,7 @@
 library(shiny)
 library(data.table)
 library(wordcloud)
+library(tm)
 source("WordPredict.R", local=TRUE)
 
 shinyServer(
