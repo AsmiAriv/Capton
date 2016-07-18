@@ -102,25 +102,26 @@ if (l==1){
 
 #######################################################################
 wordcloudPlot <- function(str){ 
-	rn <- as.numeric(row.names((gram1[gram1$word1==str,]))) 
-if(length(rn)>0) {	
-if(rn>5) {
-	
-wordcloud(gram1$word1[(rn-5):(rn+5)],gram1$scores[(rn-5):(rn+5)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
- }
-
-if(rn<=5) {
-	
-wordcloud(gram1$word1[1:10],gram1$scores[1:10],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
- }
-
-if(rn==length(gram1)) {
-	
-wordcloud(gram1$word1[(rn-10):rn],gram1$scores[(rn-10):rn],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+ rn <- as.numeric(row.names((gram1[gram1$word1==str,]))) 
+ if(length(rn)>0) {
  
-}
-}
-}
+ if(rn>5 & rn<((dim(gram1)[1])-4)) {
+ wordcloud(gram1$word1[(rn-5):(rn+5)],gram1$scores[(rn-5):(rn+5)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, 
+ ordered.colors=FALSE)
+  }
+ 
+ else if(rn<=5) {
+ wordcloud(gram1$word1[1:10],gram1$scores[1:10],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+  }
+ 
+ else if(rn>=((dim(gram1)[1])-4)) {
+ wordcloud(gram1$word1[(rn-10):rn],gram1$scores[(rn-10):rn],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
+  
+ }
+ 
+     }
+ 
+ }
 
 
 ############################
