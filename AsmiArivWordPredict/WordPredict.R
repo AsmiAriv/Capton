@@ -114,7 +114,5 @@ wordcloudPlot <- function(str){
 	}
 wordcloud(words[n:(rn)],gram1$scores[n:(rn)],scale=c(3,.5), colors=brewer.pal(8, "Dark2"),random.order=TRUE,random.color=TRUE, ordered.colors=FALSE)
 }
-if(length(rn)==0) {words <- str
-wordcloud(words,colors=brewer.pal(8, "Dark2"),random.color=TRUE)}
 }
 
